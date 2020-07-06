@@ -1,0 +1,98 @@
+---
+title: "NYC_MV_hypo1"
+author: "Mansi Rathod"
+date: "3/6/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(forcats)
+```
+
+## Hypothesis 1: Test the effect of different parts of the day on a collision resulting into an injury
+
+## Hypothesis Statement
+#### Null Hypothesis: 
+Time of the day has no effect on a collision resulting into an injury across all the 5 boroughs.</i>
+
+####  Alternate Hypothesis: 
+Time of the day  has an effect on a collision resulting into an injury across all the 5 boroughs.
+
+## Data Modelling
+In order to test our hypothesis of effect of time of the day on a collision resulting in an injury, we have divided 24 hrs of a day into 4 distinct segments. The segments are as follows:
+
+1) 12AM to 6AM  2) 6AM to 12PM  3) 12PM to 6PM 4) 6PM to 12AM 
+
+We have chosen the above time segments to segregate the influence of particular hours of the day. The time segment 6AM to 12PM takes into account the morning peak hours whereas the time segment 6PM to 12AM takes into consideration the evening traffic. Column 'time_segment' stores the above detail.
+
+## Test used and Assumption Verification
+#### Predictor/ Response Variable:
+Column 'Is_Injury' in the dataset.
+
+#### Indicator Variable: 
+Column time_segment (4 time_segments) and  Column Borough (5 Boroughs).
+
+## Code
+Since the time_segment 6PM to 12AM have the highest percentage of collisions (25%) resulting in an injury, therefore we have taken that as a reference for our logistics regression model.
+s
+```{r incldue= TRUE}
+## Loading the base data
+testingdata = read.csv("nyc_mv_crashes_base_2019.csv")
+
+## Applying the logistics regression
+testingdata['time_segment'] = fct_relevel(factor(testingdata$time_segment), "6PM_12AM")
+testingdata['Borough'] = fct_relevel(factor(testingdata$Borough), "MANHATTAN")
+
+fit = glm(Is_injury ~ factor(time_segment)+factor(Borough), data = testingdata, family = binomial)
+summary(fit)
+round(summary(fit)$coef,4)
+
+## Odd-Ratio
+zz = exp(summary(fit)$coef)
+op = data.frame((summary(fit)$coef))
+round(exp(summary(fit)$coef),4)
+
+### Reading the dummy encoding data
+## Loading the data with dummy encoding
+#basedata2 = read.csv("basedata2.csv")
+# fit2 = glm(Is_injury ~ time_segment_12AM_to_6AM +time_segment_12PM_6PM+time_segment_6AM_to_12PM+ time_segment_6PM_12AM+0+Borough_BRONX+Borough_BROOKLYN+Borough_MANHATTAN+Borough_QUEENS+Borough_STATEN.ISLAND+0, data = basedata2, family= binomial, singular.ok = T)
+# summary(fit2)
+
+```
+
+## Inference and Conlcusion
+
+1. With reference to time segment 6PM to 12AM, the odds for a collision resulting in an injury are lower by 4.19% in the time segment 12AM to 6AM.
+
+2. With reference to time segment 6PM to 12AM, the odds for a collision resulting in an injury are lower by 26% in time segment 12PM to 6PM.
+
+3. With reference to time segment 6PM to 12AM, the odds for a collision resulting in an injury are lower by 34% in the time segment 6AM to 12PM.
+
+4. With reference to Manhattan borough, the odds of for a collision resulting in an injury is 88% higher for Staten Island and 41% for Brroklyn. 
+
+5. The p-value across the 4 time segments and 5 boroughs are < 0.05 and hence we can reject the null hypothesis.
+
+## The Deviance Test
+
+```{r include = TRUE}
+
+fit_full = glm(Is_injury ~ (time_segment)+(Borough), data = collision, family = binomial)
+
+fit_reduced = glm(Is_injury ~ (Borough), data = collision, family = binomial)
+
+
+deviance = anova(fit_reduced, fit_full, test = "Chisq")
+deviance
+```
+
+Since the <2.2e-16 is very less, therefore the model is significant. With the deviance value of 917, we can say that time segment has a significant effect on a collision resulting in an injury.
+
+## 95% confidence interval for the estimated coefficients
+
+```{r include = TRUE}
+##library(Rmisc)
+##ci1 = CI(summary(fit)$coef, ci = 0.95)
+##ci1
+confint.default(fit)
+```
